@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("PRM_DB_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model users {
+  id            Int        @id @unique @default(autoincrement())
+  email         String     @unique @db.Char(100)
+  email_confirm Boolean    @default(false)
+  user_name     String     @unique @db.Char(30)
+  first_name    String     @db.Char(30)
+  last_name     String     @db.Char(30)
+  password      String     @db.Char(255)
+  blocked       Boolean    @default(false)
+  avatar        String     @default("no_avatar.jpg")
+  create_at     DateTime   @default(now())
+  update_at     DateTime   @default(now())
+  role          Role       @default(USER)
+  carts         carts[]
+  receipts      receipts[]
+}
+
+model categories {
+  id       Int        @id @default(autoincrement())
+  title    String
+  status   Boolean    @default(false)
+  avatar   String     @default("category.jpg")
+  deleted  Boolean    @default(false)
+  products products[]
+}
+
+model products {
+  id              Int               @id @default(autoincrement())
+  name            String
+  active          Boolean           @default(false)
+  des             String
+  avatar            String            @db.VarChar(300)
+  category_id     Int
+  price           Float?            @db.Float
+  category        categories        @relation(fields: [category_id], references: [id])
+  cart_details    cart_details[]
+  receipt_details receipt_details[]
+
+  @@index([category_id], map: "products_category_id_fkey")
+}
+
+model carts {
+  id           String         @id @default(uuid())
+  user         users          @relation(fields: [user_id], references: [id])
+  user_id      Int            @unique
+  cart_details cart_details[]
+}
+model guest_carts {
+  id         String       @id @default(uuid())
+  cart_details cart_details[]
+ 
+}
+
+model cart_details {
+  id         Int      @id @default(autoincrement())
+  cart       carts    @relation(fields: [cart_id], references: [id])
+  cart_id    String
+  product    products @relation(fields: [product_id], references: [id])
+  product_id Int
+  quantity   Int
+  
+ guest_cart   guest_carts? @relation(fields: [guest_cart_id], references: [id])
+  guest_cart_id String?
+
+  
+}
+
+model receipts {
+  id              Int               @id @default(autoincrement())
+  receipt_code    String
+  total           Float
+  paid            Boolean
+  paid_time       DateTime?
+  create_at       DateTime          @default(now())
+  update_at       DateTime          @default(now())
+  receipt_details receipt_details[]
+  users           users?            @relation(fields: [user_id], references: [id])
+  user_id         Int?
+}
+
+model receipt_details {
+  id         Int      @id @default(autoincrement())
+  receipt    receipts @relation(fields: [receipt_id], references: [id])
+  receipt_id Int
+  product    products @relation(fields: [product_id], references: [id])
+  product_id Int
+  quantity   Int
+  note       String?
+}
